@@ -23,13 +23,19 @@ const { createAdminUser } = require('./utils/adminSetup');
 
 const app = express();
 const server = http.createServer(app);
+
+// CORS configuration for both Express and Socket.IO
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://myvendora.netlify.app', 'https://yourdomain.com'] 
+    : ['http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 const io = new Server(server, {
-  cors: {
-    origin: process.env.NODE_ENV === 'production' 
-      ? ['https://yourdomain.com'] 
-      : ['http://localhost:3000'],
-    credentials: true
-  }
+  cors: corsOptions
 });
 
 // Socket.IO connection
@@ -59,14 +65,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // CORS configuration
-if (process.env.NODE_ENV === 'production') {
-  app.use(cors({
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://yourdomain.com'],
-    credentials: true
-  }));
-} else {
-  app.use(cors()); // Allow all origins in development
-}
+app.use(cors(corsOptions));
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
