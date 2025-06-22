@@ -26,9 +26,24 @@ const server = http.createServer(app);
 
 // CORS configuration for both Express and Socket.IO
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://myvendora.netlify.app', 'https://yourdomain.com', 'https://vendora.netlify.app'] 
-    : ['http://localhost:3000', 'http://localhost:3001'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://myvendora.netlify.app',
+      'https://vendora.netlify.app',
+      'http://localhost:3000',
+      'http://localhost:3001'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
@@ -68,6 +83,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // CORS configuration
 app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
